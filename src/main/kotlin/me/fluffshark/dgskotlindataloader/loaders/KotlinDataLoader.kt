@@ -1,5 +1,7 @@
 package me.fluffshark.dgskotlindataloader.loaders
 
+import org.springframework.stereotype.Component
+
 /**
  * Like the [DgsDataLoader] annotation, but used to register [CoroutineMappedBatchLoader]s
  * and [CoroutineMappedBatchLoaderWithContext].
@@ -8,6 +10,8 @@ package me.fluffshark.dgskotlindataloader.loaders
  * that to gat something which doesn't implement BatchLoader from java-dataloader.
  */
 @Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+@Component
 annotation class KotlinDataLoader(
   /** To be honest I'm not sure why we'd need this. Can probably be removed. */
   val name: String,
