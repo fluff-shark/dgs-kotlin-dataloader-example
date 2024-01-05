@@ -37,7 +37,7 @@ class CoroutineDataLoaderProviderTest(
     val metadata = provider.getInstanceAndMetadata(TestCoroutineLoaderWithContext::class)
     assertEquals(TEST_COROUTINE_LOADER_WITH_CONTEXT_NAME, metadata.name)
     assertEquals(TEST_COROUTINE_LOADER_WITH_CONTEXT_BATCH_SIZE, metadata.maxBatchSize)
-    assertInstanceOf(TestCoroutineLoader::class.java, metadata.instance)
+    assertInstanceOf(TestCoroutineLoaderWithContext::class.java, metadata.instance)
   }
 
   @Test
