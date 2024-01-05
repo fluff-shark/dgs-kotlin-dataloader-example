@@ -1,5 +1,5 @@
 type Query {
-    shows(titleFilter: String): [Show]
+    shows: [Show]
 }
 
 type Show {

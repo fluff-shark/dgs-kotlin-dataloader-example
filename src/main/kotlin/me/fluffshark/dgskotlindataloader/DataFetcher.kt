@@ -1,26 +1,25 @@
 package me.fluffshark.dgskotlindataloader
 
 import com.netflix.graphql.dgs.DgsComponent
+import com.netflix.graphql.dgs.DgsData
 import com.netflix.graphql.dgs.DgsQuery
 import com.netflix.graphql.dgs.InputArgument
+import com.netflix.graphql.dgs.DgsDataFetchingEnvironment
+import graphql.schema.DataFetchingEnvironment
+import me.fluffshark.dgskotlindataloader.Show
+import java.util.concurrent.CompletableFuture
 
 @DgsComponent
 class ShowsDataFetcher {
-    private val shows = listOf(
-        Show("Stranger Things", 2016),
-        Show("Ozark", 2017),
-        Show("The Crown", 2016),
-        Show("Dead to Me", 2019),
-        Show("Orange is the New Black", 2013))
-
     @DgsQuery
-    fun shows(@InputArgument titleFilter : String?): List<Show> {
-        return if(titleFilter != null) {
-            shows.filter { it.title.contains(titleFilter) }
-        } else {
-            shows
-        }
+    fun shows(): List<Show> {
+      return showMap.keys.map { Show(it, null) }.toList()
     }
 
-    data class Show(val title: String, val releaseYear: Int)
+    @DgsData(parentType = "Show")
+    fun releaseYear(dfe: DataFetchingEnvironment): CompletableFuture<Int> {
+      val show = dfe.getSource<Show>()
+      val loader = dfe.getDataLoader<String, Show>("ShowDataLoader")
+      return loader.load(show.title).thenApply { it.releaseYear }
+    }
 }
