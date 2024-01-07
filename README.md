@@ -5,9 +5,9 @@ using kotlin's `suspend`.
 
 Major thanks to @lennyburdette for the inspiration of using debounce in [this gist](https://gist.github.com/lennyburdette/f3fe6ae7a498698774cc95d1bfc956b4).
 
-### Why do this?
+## Why do this?
 
-#### Unify the concurrency models
+### Unify the concurrency models
 
 DGS uses `java-dataloader`, which is built on Java's [CompletableFuture](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html).
 Kotlin's concurrency model uses [coroutines](https://kotlinlang.org/docs/coroutines-guide.html) via the `suspend` keyword.
@@ -18,7 +18,7 @@ Related issues:
 - https://github.com/Netflix/dgs-framework/discussions/539
 - https://github.com/Netflix/dgs-framework/issues/1074
 
-#### Support multiple dataloaders per field
+### Support multiple dataloaders when resolving the same field
 
 `graphql-java` doesn't support the use of multiple DataLoaders to resolve the same field (https://github.com/graphql-java/graphql-java/issues/1198).
 DGS shares this limitation, since it uses `graphql-java` under the hood.
@@ -28,7 +28,7 @@ requests from hanging... but of course that negates the value of using a DataLoa
 
 This approach circumvents that issue.
 
-### Why _not_ do this?
+## Why _not_ do this?
 
 There is a [hardcoded debounce period](https://github.com/fluff-shark/dgs-kotlin-dataloader-example/blob/05a76c12e7e0f6a13596bf4fd31916963b459a1c/src/main/kotlin/me/fluffshark/dgskotlindataloader/loaders/AbstractCoroutineDataLoader.kt#L61)
 separating [the calls to `loader.load()`](https://github.com/fluff-shark/dgs-kotlin-dataloader-example/blob/05a76c12e7e0f6a13596bf4fd31916963b459a1c/src/main/kotlin/me/fluffshark/dgskotlindataloader/DataFetcher.kt#L26)
