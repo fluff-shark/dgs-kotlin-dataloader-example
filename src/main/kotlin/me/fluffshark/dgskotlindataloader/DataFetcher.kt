@@ -21,8 +21,8 @@ class ShowsDataFetcher {
     @DgsData(parentType = "Show")
     suspend fun releaseYear(dfe: DgsDataFetchingEnvironment): Int? {
       val showWithTitleOnly = dfe.getSource<Show>()
-      val loader = DgsContext.getCustomContext<CustomContext>(dfe)
-        .getDataLoader(ShowDataLoader::class)
+      val loader = DgsContext.getCustomContext<CustomContext>(dfe).getDataLoader(ShowDataLoader::class)
+      println("Calling load(${showWithTitleOnly.title})")
       val loaded = loader.load(showWithTitleOnly.title)
       return loaded?.releaseYear
     }

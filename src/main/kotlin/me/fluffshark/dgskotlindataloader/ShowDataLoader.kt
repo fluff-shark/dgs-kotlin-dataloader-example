@@ -10,9 +10,9 @@ import kotlinx.coroutines.delay
 @KotlinDataLoader(name = "ShowDataLoader")
 class ShowDataLoader : CoroutineMappedBatchLoader<String, Show> {
     override suspend fun load(keys: Set<String>): Map<String, Show> {
+      println("Running load($keys)")
       val shows = keys.map { Show(it, showMap.get(it)) }
       val showsByName = shows.associateBy { it.title }.toMutableMap()
-      delay(1000) // To help show proper batching w/ a manual query
       return showsByName
     }
 }
