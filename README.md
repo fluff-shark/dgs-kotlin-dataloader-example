@@ -36,7 +36,7 @@ Calling load(Orange is the New Black)
 Running load([Dead to Me, Stranger Things, Orange is the New Black, The Crown, Ozark])
 ```
 
-Those come from [here](https://github.com/fluff-shark/dgs-kotlin-dataloader-example/blob/cc353a004887528908248ea3932a5956933fd3ae/src/main/kotlin/me/fluffshark/dgskotlindataloader/DataFetcher.kt#L25) and [here](https://github.com/fluff-shark/dgs-kotlin-dataloader-example/blob/cc353a004887528908248ea3932a5956933fd3ae/src/main/kotlin/me/fluffshark/dgskotlindataloader/ShowDataLoader.kt#L13), showing how the loads are batched.
+Those come from [here](https://github.com/fluff-shark/dgs-kotlin-dataloader-example/blob/cc353a004887528908248ea3932a5956933fd3ae/src/main/kotlin/me/fluffshark/dgskotlindataloader/DataFetcher.kt#L25) and [here](https://github.com/fluff-shark/dgs-kotlin-dataloader-example/blob/cc353a004887528908248ea3932a5956933fd3ae/src/main/kotlin/me/fluffshark/dgskotlindataloader/ShowDataLoader.kt#L13), showing how the loads are batched. Note that the batching may not be perfect (see "why not do this?" below)
 
 ## Why do this?
 
@@ -65,9 +65,9 @@ This approach circumvents that issue.
 
 There is a [hardcoded debounce period](https://github.com/fluff-shark/dgs-kotlin-dataloader-example/blob/05a76c12e7e0f6a13596bf4fd31916963b459a1c/src/main/kotlin/me/fluffshark/dgskotlindataloader/loaders/AbstractCoroutineDataLoader.kt#L61)
 separating [the calls to `loader.load()`](https://github.com/fluff-shark/dgs-kotlin-dataloader-example/blob/05a76c12e7e0f6a13596bf4fd31916963b459a1c/src/main/kotlin/me/fluffshark/dgskotlindataloader/DataFetcher.kt#L26)
-and the start of [the DataLoader implementation](https://github.com/fluff-shark/dgs-kotlin-dataloader-example/blob/05a76c12e7e0f6a13596bf4fd31916963b459a1c/src/main/kotlin/me/fluffshark/dgskotlindataloader/ShowDataLoader.kt#L12).
+and execution of [the DataLoader implementation](https://github.com/fluff-shark/dgs-kotlin-dataloader-example/blob/05a76c12e7e0f6a13596bf4fd31916963b459a1c/src/main/kotlin/me/fluffshark/dgskotlindataloader/ShowDataLoader.kt#L12).
 
-This is a compromise with no perfect option. The longer the `delay`, the more latency added to each query. Too short of a `delay` and
+There's a compromise here with no perfect option. The longer the `delay`, the more latency added to each query. Too short of a `delay` and
 the calls to the DataLoader impl won't get batched as effectively as they could be.
 
 Depending on your performance needs and scale, this may or may not be a problem for you.
