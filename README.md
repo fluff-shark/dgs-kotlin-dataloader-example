@@ -5,6 +5,13 @@ using kotlin's `suspend`.
 
 Major thanks to @lennyburdette for the inspiration of using debounce in [this gist](https://gist.github.com/lennyburdette/f3fe6ae7a498698774cc95d1bfc956b4).
 
+## Key files
+
+- [CoroutineDataLoader](./src/main/kotlin/me/fluffshark/dgskotlindataloader/loaders/CoroutineDataLoader.kt): DataFetcher-facing API
+- [CoroutineMappedBatchLoader](./src/main/kotlin/me/fluffshark/dgskotlindataloader/loaders/CoroutineMappedBatchLoader.kt) and [CoroutineMappedBatchLoaderWithContext](./src/main/kotlin/me/fluffshark/dgskotlindataloader/loaders/CoroutineMappedBatchLoaderWithContext.kt): Loader interfaces to implement
+- [ShowDataLoader](./src/main/kotlin/me/fluffshark/dgskotlindataloader/ShowDataLoader.kt): Sample implementation
+- [DataFetcher](./src/main/kotlin/me/fluffshark/dgskotlindataloader/DataFetcher.kt): Sample caller
+
 ## Why do this?
 
 ### Unify the concurrency models
