@@ -12,6 +12,32 @@ Major thanks to @lennyburdette for the inspiration of using debounce in [this gi
 - [ShowDataLoader](./src/main/kotlin/me/fluffshark/dgskotlindataloader/ShowDataLoader.kt): Sample implementation
 - [DataFetcher](./src/main/kotlin/me/fluffshark/dgskotlindataloader/DataFetcher.kt): Sample caller
 
+## Demo
+
+Run the server, visit http://localhost:8080/graphiql in a browser, and run the query:
+
+```
+{
+    shows {
+        title
+        releaseYear
+    }
+}
+```
+
+Note the terminal output, which should look something like this:
+
+```
+Calling load(Stranger Things)
+Calling load(Ozark)
+Calling load(The Crown)
+Calling load(Dead to Me)
+Calling load(Orange is the New Black)
+Running load([Dead to Me, Stranger Things, Orange is the New Black, The Crown, Ozark])
+```
+
+Those come from [here](https://github.com/fluff-shark/dgs-kotlin-dataloader-example/blob/cc353a004887528908248ea3932a5956933fd3ae/src/main/kotlin/me/fluffshark/dgskotlindataloader/DataFetcher.kt#L25) and [here](https://github.com/fluff-shark/dgs-kotlin-dataloader-example/blob/cc353a004887528908248ea3932a5956933fd3ae/src/main/kotlin/me/fluffshark/dgskotlindataloader/ShowDataLoader.kt#L13), showing how the loads are batched.
+
 ## Why do this?
 
 ### Unify the concurrency models
