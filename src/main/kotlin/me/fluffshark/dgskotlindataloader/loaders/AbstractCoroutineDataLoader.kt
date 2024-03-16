@@ -3,14 +3,14 @@ package me.fluffshark.dgskotlindataloader.loaders
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
-import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-internal abstract class AbstractCoroutineDataLoader<K, V>(private val maxBatchSize: Int): CoroutineDataLoader<K, V> {
+internal abstract class AbstractCoroutineDataLoader<K, V>(private val maxBatchSize: Int) : CoroutineDataLoader<K, V> {
   // Set of keys which callers tried to load() that have _not_ been fetched yet
   private val queuedKeys = Collections.newSetFromMap(ConcurrentHashMap<K, Boolean>())
   // Set of keys whose values exist in fetchedValues. This is a superset of fetchedValues.keys() because
@@ -32,51 +32,90 @@ internal abstract class AbstractCoroutineDataLoader<K, V>(private val maxBatchSi
   abstract suspend fun doLoad(keys: Set<K>): Map<K, V>
 
   override suspend fun load(key: K): V? {
-    // Java's Concurrent data structures don't block on reads... so these optimistic reads
-    // should be fast and will help minimize locking.
+    // Java's Concurrent data structures do not block on reads... so these optimistic reads should be
+    // fast and will help minimize locking.
     if (fetchedKeys.contains(key)) {
       return fetchedValues[key]
     }
 
-    // Otherwise add this key to the queue, and kick off a new job. This fetchJob?.join() happens
-    // in a loop because the _current_ fetchJob might get canceled by another call to load() before its
-    // delay() has elapsed. We need one job to _actually_ complete.
+    // Add the key to the queue of keys to be fetched.
     queuedKeys.add(key)
-    restartLoadJob()
-    while (!fetchedKeys.contains(key)) {
-      fetchJob.get()?.join()
-    }
-    return fetchedValues[key]
+    return fetchAndReturnValue(key)
   }
 
   /**
-   * Kick off a job which waits for 1 millisecond and then loads everything from keysToFetch into fetchedValues.
-   * If an existing job is queued, cancel it and restart with a new one.
+   * We only allow one fetch job to be running at a time. A fetch job loads values based on keys
+   * from queuedKeys into `fetchedValues` and `fetchedKeys`.
+   *
+   * First, check if value already exists in `fetchedValues`. If it does, return it.
+   *
+   * If not, check if there is an existing job and wait until it finishes. After it finishes, check
+   * if the key is already fetched again. If it is, return its value.
+   *
+   * If not, start a new job to fetch the key. This time, we should wait for the job to finish
+   * before we check if the key is already fetched. If not, it means the key we look for doesn't
+   * exist.
    */
-  private suspend fun restartLoadJob() = coroutineScope {
+  private suspend fun fetchAndReturnValue(key: K): V? = coroutineScope {
+    // We use a job lock here to make sure we don't start two fetch jobs at the same time. Also, this lock suspends
+    // the coroutine until the fetch job is done. So we automatically wait for the fetch job to finish before
+    // we check if the key is already fetched.
     fetchJobLock.withLock {
-      fetchJob.get()?.cancel()
-      fetchJob.set(
-        launch {
-          delay(1)
-          // fetchDataLock makes sure we don't load keys twice if `loader.load()` takes longer than `delay()`
-          fetchDataLock.withLock {
-            val snapshot = queuedKeys.toSet()
-            val valueMap = if (snapshot.size >= maxBatchSize) {
-              val batches = snapshot.chunked(maxBatchSize)
-              val values = batches.pmap { doLoad(it.toSet()) }
-              mutableMapOf<K, V>().apply {
-                values.forEach(::putAll)
-              }
-            } else {
-              doLoad(snapshot)
-            }
+      // If the key is already fetched, return its value.
+      if (fetchedKeys.contains(key)) {
+        return@coroutineScope fetchedValues[key]
+      }
+
+      // If the key is not fetched, it means the key we look for wasn't included in `queuedKeys` when the job
+      // started. Thus, we should restart the job with the key we're looking for.
+      if (fetchJob.get() != null) {
+        // If a job already exists, wait for it to finish before kicking off a new one.
+        // Normally, the `fetchJobLock` is released when a job is done. However exceptions or cancellations
+        // can cause lock to be released before the job is done. So we need to wait for the job to finish.
+        fetchJob.get()?.join()
+      }
+
+      // There is a chance that last finished job already fetched the key we're looking for. If so, return its value.
+      if (fetchedKeys.contains(key)) {
+        return@coroutineScope fetchedValues[key]
+      }
+
+      // Start a job that fetches all keys in `queuedKeys` and populates `fetchedKeys` and `fetchedValues`.
+      val newJob = launch {
+        // 1-millisecond grace period to allow for more keys to be added to `queuedKeys`.
+        delay(1)
+        // fetchDataLock makes sure we don't load keys twice if `loader.load()` takes longer than `delay()`
+        fetchDataLock.withLock {
+          // Take a snapshot of the keys that we are fetching. This is important because we want to remove
+          // the keys from `queuedKeys` only after we have fetched the values for them.
+          val snapshot = queuedKeys.toSet()
+          try {
+            val valueMap =
+                if (snapshot.size >= maxBatchSize) {
+                  val batches = snapshot.chunked(maxBatchSize)
+                  val values = batches.pmap { doLoad(it.toSet()) }
+                  mutableMapOf<K, V>().apply { values.forEach(::putAll) }
+                } else {
+                  doLoad(snapshot)
+                }
             fetchedValues.putAll(valueMap.filterValues { it != null })
-            queuedKeys.removeAll(snapshot)
             fetchedKeys.addAll(snapshot)
+          } finally {
+            // If we fail to fetch the values, we should remove the keys from `queuedKeys`.
+            // Otherwise, the keys will be stuck in `queuedKeys` forever.
+            queuedKeys.removeAll(snapshot)
           }
         }
-      )
+      }
+      // Update the current running fetch job.
+      fetchJob.set(newJob)
+
+      // Wait until the job is done
+      newJob.join()
+
+      // At this point, our key should be in `fetchedKeys` and we should have its value in `fetchedValues`.
+      // If not, it means that there was an error fetching the value and we should return null.
+      return@coroutineScope fetchedValues[key]
     }
   }
 }
