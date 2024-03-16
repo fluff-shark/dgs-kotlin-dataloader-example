@@ -114,7 +114,8 @@ internal abstract class AbstractCoroutineDataLoader<K, V>(private val maxBatchSi
       newJob.join()
 
       // At this point, our key should be in `fetchedKeys` and we should have its value in `fetchedValues`.
-      // If not, it means that there was an error fetching the value and we should return null.
+      // If not, it means that there was an error fetching the value so we'll just return null.
+      // This... may or may not be a good idea depending on your use-cases though.
       return@coroutineScope fetchedValues[key]
     }
   }
